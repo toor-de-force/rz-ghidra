@@ -48,7 +48,11 @@ set(CORE_SOURCE
 		src/RizinPrintC.cpp
 		src/RzCoreMutex.h
 		src/RzCoreMutex.cpp
-		src/rz_ghidra.h)
+		src/rz_ghidra.h
+        src/RizinPrintPCode.h
+		src/RizinPrintPCode.cpp
+		src/printpcode.cc
+		src/printpcode.hh)
 
 if(BUILD_SLEIGH_PLUGIN)
 set(ASM_SOURCE
