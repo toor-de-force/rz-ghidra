@@ -12,6 +12,7 @@
 
 #include <libdecomp.hh>
 #include <printc.hh>
+#include "printpcode.hh"
 
 #include <rz_core.h>
 
@@ -102,6 +103,7 @@ static void PrintUsage(const RzCore *const core)
 		CMD_PREFIX"sd", " N", "# Disassemble N instructions with Sleigh and print pcode",
 		CMD_PREFIX"a", "", "# Switch to RzAsm and RzAnalysis plugins driven by SLEIGH from Ghidra",
 		CMD_PREFIX"*",  "", "# Decompiled code is returned to r2 as comment",
+        CMD_PREFIX"l",  "", "# Dump the XML of the final pcode for the current function",
 		"Environment:", "", "",
 		"%SLEIGHHOME" , "", "# Path to ghidra build root directory",
 		NULL
@@ -110,7 +112,7 @@ static void PrintUsage(const RzCore *const core)
 	rz_cons_cmd_help(help, core->print->flags & RZ_PRINT_FLAGS_COLOR);
 }
 
-enum class DecompileMode { DEFAULT, XML, DEBUG_XML, OFFSET, STATEMENTS, JSON };
+enum class DecompileMode { DEFAULT, XML, DEBUG_XML, OFFSET, STATEMENTS, JSON, FINAL_PCODE };
 
 //#define DEBUG_EXCEPTIONS
 
@@ -145,8 +147,13 @@ static void Decompile(RzCore *core, ut64 addr, DecompileMode mode, std::stringst
 	arch.init(store);
 	Funcdata *func = arch.symboltab->getGlobalScope()->findFunction(Address(arch.getDefaultCodeSpace(), function->addr));
 	arch.print->setOutputStream(&out_stream);
-	arch.setPrintLanguage("r2-c-language");
-	ApplyPrintCConfig(core->config, dynamic_cast<PrintC *>(arch.print));
+	if (mode == DecompileMode::FINAL_PCODE){
+	    arch.setPrintLanguage("r2-pcode-language");
+        ApplyPrintCConfig(core->config, dynamic_cast<PrintC *>(arch.print));
+	} else {
+        arch.setPrintLanguage("r2-c-language");
+        ApplyPrintCConfig(core->config, dynamic_cast<PrintC *>(arch.print));
+	}
 	if(!func)
 		throw LowlevelError("No function in Scope");
 	arch.getCore()->sleepBegin();
@@ -189,15 +196,20 @@ static void Decompile(RzCore *core, ut64 addr, DecompileMode mode, std::stringst
 		case DecompileMode::STATEMENTS:
 			arch.print->setXML(true);
 			break;
+        case DecompileMode::FINAL_PCODE:
 		default:
 			break;
 	}
-	if(mode == DecompileMode::XML)
+	if(mode == DecompileMode::FINAL_PCODE)
 	{
-		out_stream << "<result><function>";
-		func->saveXml(out_stream, 0, true);
-		out_stream << "</function><code>";
+		out_stream << "<result><pcode>";
 	}
+    if(mode == DecompileMode::XML)
+    {
+        out_stream << "<result><function>";
+        func->saveXml(out_stream, 0, true);
+        out_stream << "</function><code>";
+    }
 	switch(mode)
 	{
 		case DecompileMode::XML:
@@ -213,6 +225,9 @@ static void Decompile(RzCore *core, ut64 addr, DecompileMode mode, std::stringst
 					throw LowlevelError("Failed to parse XML code from Decompiler");
 			}
 			break;
+        case DecompileMode::FINAL_PCODE:
+            arch.print->docFunction(func);
+            break;
 		case DecompileMode::DEBUG_XML:
 			arch.saveXml(out_stream);
 			break;
@@ -278,6 +293,9 @@ static void DecompileCmd(RzCore *core, DecompileMode mode)
 			case DecompileMode::XML:
 				out_stream << "</code></result>";
 				// fallthrough
+		    case DecompileMode::FINAL_PCODE:
+                out_stream << "</pcode></result>";
+                // fallthrough
 			default:
 				rz_cons_printf("%s\n", out_stream.str().c_str());
 				break;
@@ -527,6 +545,9 @@ static void _cmd(RzCore *core, const char *input)
 		case 'a': // "pdga"
 			EnablePlugin(core);
 			break;
+        case 'l': // "pdgl"
+            DecompileCmd(core, DecompileMode::FINAL_PCODE);
+            break;
 		default:
 			PrintUsage(core);
 			break;

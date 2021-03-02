@@ -45,9 +45,13 @@ set(CORE_SOURCE
 		src/ArchMap.cpp
 		src/R2PrintC.h
 		src/R2PrintC.cpp
+		src/R2PrintPCode.h
+		src/R2PrintPCode.cpp
+		src/printpcode.cc
+		src/printpcode.hh
 		src/RzCoreMutex.h
 		src/RzCoreMutex.cpp
-		src/rz_ghidra.h)
+		src/rz_ghidra.h src/printpcode.hh)
 
 if(BUILD_SLEIGH_PLUGIN)
 set(ASM_SOURCE
