@@ -648,3 +648,15 @@ RzCorePlugin rz_core_plugin_ghidra = {
 	/*.init = */ rz_ghidra_init,
 	/*.fini = */ rz_ghidra_fini
 };
+
+#ifndef CORELIB
+extern "C" {
+RZ_API RzLibStruct rizin_plugin = {
+	/* .type = */ RZ_LIB_TYPE_CORE,
+	/* .data = */ &rz_core_plugin_ghidra,
+	/* .version = */ RZ_VERSION,
+	/* .free = */ nullptr,
+	/* .pkgname = */ "rz-ghidra"
+};
+}
+#endif
