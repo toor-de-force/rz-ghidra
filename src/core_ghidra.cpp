@@ -648,4 +648,3 @@ RzCorePlugin rz_core_plugin_ghidra = {
 	/*.init = */ rz_ghidra_init,
 	/*.fini = */ rz_ghidra_fini
 };
-#endif
